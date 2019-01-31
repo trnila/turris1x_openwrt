@@ -1,0 +1,16 @@
+#!/bin/sh /etc/rc.common
+
+START=0
+
+start() {
+        ip link set eth0 down
+        ip link set eth1 down
+        ip link set eth2 down
+        ip link set dev eth0 address d8:58:d7:00:19:11
+        ip link set dev eth1 address d8:58:d7:00:19:12
+        ip link set dev eth2 address d8:58:d7:00:19:13
+        ip link set eth0 up
+        ip link set eth1 up
+        ip link set eth2 up
+}
+
