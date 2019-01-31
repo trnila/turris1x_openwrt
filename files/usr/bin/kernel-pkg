@@ -1,0 +1,43 @@
+#!/bin/sh
+
+PKG_URL=https://api.turris.cz/openwrt-repo/turris/packages/base/
+KERNEL_URL=https://api.turris.cz/openwrt-repo/turris/openwrt-mpc85xx-p2020-nand-zImage
+FDT_URL=https://api.turris.cz/openwrt-repo/turris/openwrt-mpc85xx-p2020-nand-turris-nand-bch.fdt
+
+available_modules=$(curl "$PKG_URL" --insecure | grep -oE 'kmod[^<"]+' | sort | uniq)
+
+download_module() (
+  cd / && curl "$PKG_URL$1" --insecure | tar -O -zx ./data.tar.gz | tar -zvx
+)
+
+download_module_name() {
+  full_name=$(echo "$available_modules" | grep "^kmod-$1_")
+  if [ -z "$full_name" ]; then
+    echo "No package for $1"
+  else
+    download_module "$full_name"
+  fi
+}
+
+if [ "$1" = "install" ]; then
+  if [ -z "$2" ]; then
+    echo "Usage: $0 install package_name" >&2
+    exit 1
+  fi
+  download_module_name "$2"
+elif [ "$1" = "update" ]; then
+  curl --insecure "$KERNEL_URL" > /boot/zImage
+  curl --insecure "$FDT_URL" > /boot/fdt
+
+  while read module; do
+	echo Updating $module
+	download_module_name "$module"
+  done < /etc/turris-modules
+else
+  (
+    echo "Usage: "
+    echo "  $0 update"
+    echo "  $0 install package_name"
+   ) >&2
+   exit 1
+fi
